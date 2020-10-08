@@ -10,6 +10,29 @@ Out of the box the process server (kie-server) in RHPAM in conjuction with JBoss
 6. Custom login module validates the HTTP request headers added by the SSO filter and map the roles into the JACC PolicyContext.
 7. Custom login module also load any passed in UserGroupCallback implementations to retrieve additional roles for user tasks.
 
+There are 3 projects in this repository:
+
+1. **custom-user-group-callback** is a custom implementation of the `org.kie.api.task.UserGroupCallback` interface.
+2. **http-header-based-auth** is the login module implementation.
+3. **servlet-filter** contains the servlet filters.
+
+There are also two properties files for reference:
+
+1. **custom-sso-headers.properties** contains the SSO headers to add to the HTTP request.  This is used by the mock SSO servlet filter.
+2. **custom-user-call-back.properties** contains the users and roles for the custom user group callback implementation.
+
 ## Instructions
+
+### 1. Build each project.
+The easiest way is `mvn clean install`
+
+### 2. Copy all 3 built jars into the kie-server lib folder
+```
+> cp custom-user-group-callback/target/custom-user-group-callback.jar $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/lib/.
+> cp http-header-based-auth/target/http-header-based-auth.jar $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/lib/.
+> cp servlet-filter/target/servlet-filter.jar $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/lib/.
+```
+
+### 3. Modify $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/web.xml
 
 
