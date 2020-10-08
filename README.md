@@ -35,4 +35,85 @@ The easiest way is `mvn clean install`
 
 ### 3. Modify $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/web.xml
 
+1. Add filter entries and their mapping counterparts.  Make sure the login filter is defined after the mock filter.
 
+```
+<filter>
+    <filter-name>mock</filter-name>
+    <filter-class>com.redhat.example.servlet.filter.mock.MockSSORestFilter</filter-class>
+</filter>
+<filter-mapping>
+    <filter-name>mock</filter-name>
+    <url-pattern>/services/rest/*</url-pattern>
+</filter-mapping>
+<filter>
+    <filter-name>login</filter-name>
+    <filter-class>com.redhat.example.servlet.filter.HTTPHeaderLoginFilter</filter-class>
+</filter>
+<filter-mapping>
+    <filter-name>login</filter-name>
+    <url-pattern>/services/rest/*</url-pattern>
+</filter-mapping>
+```
+2. Comment out or delete the auth-constraint for the servlet resources
+
+```
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>REST web resources</web-resource-name>
+      <url-pattern>/services/rest/*</url-pattern>
+      <http-method>GET</http-method>
+      <http-method>PUT</http-method>
+      <http-method>POST</http-method>
+      <http-method>DELETE</http-method>
+    </web-resource-collection>
+    <!--
+    <auth-constraint>
+      <role-name>kie-server</role-name>
+      <role-name>user</role-name>
+    </auth-constraint>
+    -->
+  </security-constraint>
+```
+3. Comment out or delete the login-config section
+
+```
+  <!--
+  <login-config>
+    <auth-method>BASIC</auth-method>
+    <realm-name>KIE Server</realm-name>
+  </login-config>
+  -->
+```
+### 4. Modify the $JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/jboss-web.xml file
+
+Change the security-domain to **kie-server**
+
+```
+<jboss-web>
+  <security-domain>kie-server</security-domain>
+</jboss-web>
+```
+
+### 5. Modify the $JBOSS_HOME/standlone/configuration/standalone-full.xml file
+
+Add a new security-domain call **kie-server** under the security subsystem.
+
+```
+                <security-domain name="kie-server" cache-type="default">
+                    <authentication>
+                        <login-module code="com.redhat.example.http.auth.HTTPHeaderLoginModule" flag="required" module="deployment.kie-server.war">
+                            <module-option name="password-stacking" value="useFirstPass"/>
+                            <module-option name="EXTRA_ROLES_USER_GROUP_CALLBACK_CLASS" value="com.redhat.custom.PropertyBasedUserGroupCallback"/>
+                        </login-module>
+                    </authentication>
+                </security-domain>
+```
+
+The `module="deployment.kie-server.war"` attribute tells JBoss to look in the kie-server.war deployment for the Java class.  The `EXTRA_ROLES_USER_GROUP_CALLBACK_CLASS` module option is used by the HTTPHeaderLoginModule class to load additional roles for user tasks.
+
+### 6. Define properties to use custom files
+
+1. Define a `custom.user.group.callback.file` system property to point to the **custom-user-call-back.properties** file so the PropertyBasedUserGroupCallback class can find additional roles.
+
+2. Define a `custom.sso.request.header.file` system property to point to the **custom-sso-headers.properties** file so the MockSSORestFilter class can find the HTTP headers to add to the request.
